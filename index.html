@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenSetorGmail - Platform Setor & Withdraw Gmail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest" crossorigin="anonymous"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <div id="app" class="max-w-md mx-auto w-full bg-white min-h-screen shadow-xl flex flex-col justify-between relative pb-20">
+    </div>
+
+    <script>
+        const ADMIN_USER = "Zen Kujou Takanashi Mikadono";
+        const ADMIN_PASS = "ha12ha34";
+
+        let db = JSON.parse(localStorage.getItem('zensetorget_db')) || {
+            users: [],
+            currentUser: null,
+            rate: 2500,
+            minWd: 2500,
+            isOpen: true,
+            announcement: "SATU WEBSITE, SEMUA UNTUNG !! Siap bikin usahamu jadi tujuan utama pelanggan? Dengan ZenSetorGmail, kamu bisa jual akun gmail dari semua provider dengan mudah dan untung besar!",
+            withdraws: [],
+            setorQueue: []
+        };
+
+        function saveDb() {
+            localStorage.setItem('zensetorget_db', JSON.stringify(db));
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+
+            if (!db.currentUser) {
+                app.innerHTML = renderAuth();
+            } else if (db.currentUser === ADMIN_USER) {
+                app.innerHTML = renderAdminPanel();
+            } else {
+                app.innerHTML = renderDashboard();
+            }
+
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+        }
+
+        let isLoginMode = true;
+        function renderAuth() {
+            return `
+                <div class="p-6 flex flex-col justify-center min-h-screen">
+                    <div class="text-center mb-8">
+                        <div class="inline-flex p-3 bg-emerald-100 text-emerald-600 rounded-2xl mb-3">
+                            <i data-lucide="mail" class="w-8 h-8">✉️</i>
+                        </div>
+                        <h1 class="text-2xl font-bold text-slate-900">ZenSetorGmail</h1>
+                        <p class="text-sm text-slate-500 mt-1">Platform setor & withdraw gmail terpercaya</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                        <h2 class="text-lg font-semibold text-slate-800">${isLoginMode ? 'Login Akun' : 'Daftar Akun Baru'}</h2>
+                        
+                        <div>
+                            <label class="text-xs font-medium text-slate-600">Username</label>
+                            <div class="flex items-center mt-1 border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-emerald-500">
+                                <i data-lucide="user" class="w-4 h-4 text-slate-400 mr-2">👤</i>
+                                <input type="text" id="authUsername" placeholder="Masukkan username" class="w-full text-sm outline-none bg-transparent">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-slate-600">Password</label>
+                            <div class="flex items-center mt-1 border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-emerald-500">
+                                <i data-lucide="lock" class="w-4 h-4 text-slate-400 mr-2">🔒</i>
+                                <input type="password" id="authPassword" placeholder="Masukkan password" class="w-full text-sm outline-none bg-transparent">
+                            </div>
+                        </div>
+
+                        <button onclick="handleAuth()" class="w-full bg-emerald-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition">
+                            ${isLoginMode ? 'Login' : 'Daftar'}
+                        </button>
+
+                        <p class="text-center text-xs text-slate-500 mt-4">
+                            ${isLoginMode ? 'Belum punya akun?' : 'Sudah punya akun?'} 
+                            <button onclick="isLoginMode = !isLoginMode; render();" class="text-emerald-600 font-semibold ml-1">
+                                ${isLoginMode ? 'Daftar sini' : 'Login sini'}
+                            </button>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleAuth() {
+            const u = document.getElementById('authUsername').value.trim();
+            const p = document.getElementById('authPassword').value.trim();
+
+            if (!u || !p) {
+                alert('Username dan password harus diisi!');
+                return;
+            }
+
+            if (u === ADMIN_USER && p === ADMIN_PASS) {
+                db.currentUser = ADMIN_USER;
+                saveDb();
+                render();
+                return;
+            }
+
+            if (isLoginMode) {
+                const found = db.users.find(x => x.username === u && x.password === p);
+                if (found) {
+                    db.currentUser = u;
+                    saveDb();
+                    render();
+                } else {
+                    alert('Username atau password salah!');
+                }
+            } else {
+                const exists = db.users.find(x => x.username === u);
+                if (exists) {
+                    alert('Username sudah terdaftar!');
+                    return;
+                }
+                db.users.push({ username: u, password: p, balance: 0, totalEmails: 0 });
+                db.currentUser = u;
+                saveDb();
+                render();
+            }
+        }
+
+        let activeTab = 'home';
+        function renderDashboard() {
+            const user = db.users.find(x => x.username === db.currentUser) || { balance: 0, totalEmails: 0 };
+            
+            return `
+                <div>
+                    <div class="px-6 pt-6 pb-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-b-3xl shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <span class="text-xs uppercase tracking-wider text-violet-200">WELCOME</span>
+                                <h1 class="text-xl font-bold">ZenSetorGmail</h1>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 ${db.isOpen ? 'bg-emerald-500' : 'bg-red-500'} text-white text-xs font-semibold rounded-full flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> ${db.isOpen ? 'OPEN' : 'CLOSE'}
+                                </span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-violet-100 mb-4">Setor Gmail, langsung cuan dengan rate terbaik!</p>
+                        
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl flex justify-between items-center text-sm">
+                            <span>Rate: Rp ${db.rate.toLocaleString('id-ID')}/email</span>
+                            <span class="font-bold">Saldo: Rp ${user.balance.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        ${activeTab === 'home' ? renderHomeTab(user) : ''}
+                        ${activeTab === 'withdraw' ? renderWithdrawTab(user) : ''}
+                        ${activeTab === 'riwayat' ? renderRiwayatTab() : ''}
+                        ${activeTab === 'info' ? renderInfoTab() : ''}
+                        ${activeTab === 'profil' ? renderProfilTab(user) : ''}
+                    </div>
+                </div>
+
+                <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 flex justify-around items-center text-xs text-slate-500 shadow-lg">
+                    <button onclick="activeTab='home'; render();" class="flex flex-col items-center ${activeTab==='home'?'text-violet-600 font-semibold':''}">
+                        <i data-lucide="home" class="w-5 h-5 mb-1">🏠</i> Home
+                    </button>
+                    <button onclick="activeTab='withdraw'; render();" class="flex flex-col items-center ${activeTab==='withdraw'?'text-violet-600 font-semibold':''}">
+                        <i data-lucide="wallet" class="w-5 h-5 mb-1">💳</i> Withdraw
+                    </button>
+                    <button onclick="activeTab='riwayat'; render();" class="flex flex-col items-center ${activeTab==='riwayat'?'text-violet-600 font-semibold':''}">
+                        <i data-lucide="clock" class="w-5 h-5 mb-1">🕒</i> Riwayat
+                    </button>
+                    <button onclick="activeTab='info'; render();" class="flex flex-col items-center ${activeTab==='info'?'text-violet-600 font-semibold':''}">
+                        <i data-lucide="info" class="w-5 h-5 mb-1">ℹ️</i> Info
+                    </button>
+                    <button onclick="activeTab='profil'; render();" class="flex flex-col items-center ${activeTab==='profil'?'text-violet-600 font-semibold':''}">
+                        <i data-lucide="user" class="w-5 h-5 mb-1">👤</i> Profil
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderHomeTab(user) {
+            const totalUsers = db.users.length;
+            const totalEmailsAll = db.users.reduce((acc, curr) => acc + curr.totalEmails, 0);
+
+            return `
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                        <div class="p-2 bg-violet-50 text-violet-600 rounded-xl inline-block mb-2">
+                            <i data-lucide="users" class="w-5 h-5">👥</i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">${totalUsers}</h3>
+                        <p class="text-xs text-slate-400">Pengguna</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                        <div class="p-2 bg-violet-50 text-violet-600 rounded-xl inline-block mb-2">
+                            <i data-lucide="mail" class="w-5 h-5">✉️</i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">${totalEmailsAll}</h3>
+                        <p class="text-xs text-slate-400">Total Email Terverifikasi</p>
+                    </div>
+                </div>
+
+                <div class="bg-violet-50 border border-violet-100 p-4 rounded-2xl mb-6">
+                    <div class="flex items-center gap-2 mb-2 text-violet-700 font-semibold text-sm">
+                        <i data-lucide="bell" class="w-4 h-4">🔔</i> Pengumuman
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">${db.announcement}</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                    <h3 class="font-semibold text-sm mb-3 text-slate-800">Setor Gmail Baru</h3>
+                    ${db.isOpen ? `
+                        <div id="validationError"></div>
+                        <textarea id="gmailList" rows="4" placeholder="email@gmail.com|password (Satu per baris)" class="w-full text-xs p-3 border border-slate-200 rounded-xl outline-none focus:border-violet-500 mb-3 font-mono"></textarea>
+                        <button onclick="submitSetor()" class="w-full bg-violet-600 text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-violet-700 transition">Kirim Setoran</button>
+                    ` : `
+                        <div class="p-4 bg-red-50 text-red-600 text-xs rounded-xl text-center font-medium">Mohon Maaf, Setoran Gmail sedang CLOSE.</div>
+                    `}
+                </div>
+            `;
+        }
+
+        function submitSetor() {
+            const rawVal = document.getElementById('gmailList').value.trim();
+            if (!rawVal) {
+                alert('Masukkan daftar Gmail terlebih dahulu!');
+                return;
+            }
+
+            const lines = rawVal.split('\n').map(l => l.trim()).filter(l => l !== '');
+            const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+            
+            let validList = [];
+            let invalidList = [];
+            let duplicateCount = 0;
+            const seenEmails = new Set();
+
+            lines.forEach((line, index) => {
+                const parts = line.split('|');
+                
+                if (parts.length >= 2) {
+                    const email = parts[0].trim();
+                    const emailLower = email.toLowerCase();
+                    const password = parts.slice(1).join('|').trim();
+
+                    const isEmailValid = gmailRegex.test(email);
+                    const isPasswordValid = password.length > 0;
+
+                    if (isEmailValid && isPasswordValid) {
+                        if (seenEmails.has(emailLower)) {
+                            duplicateCount++;
+                        } else {
+                            seenEmails.add(emailLower);
+                            validList.push(`${email}|${password}`);
+                        }
+                    } else {
+                        let reason = [];
+                        if (!isEmailValid) reason.push('Format Gmail salah');
+                        if (!isPasswordValid) reason.push('Password kosong');
+                        invalidList.push(`Baris ${index + 1} (${line}): ${reason.join(', ')}`);
+                    }
+                } else {
+                    invalidList.push(`Baris ${index + 1} (${line}): Format harus email|password`);
+                }
+            });
+
+            const errorContainer = document.getElementById('validationError');
+            let infoHTML = '';
+
+            if (duplicateCount > 0) {
+                infoHTML += `
+                    <div class="p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700 mb-2">
+                        <p class="font-bold">⚠️ Otomatis Memfilter Duplikat:</p>
+                        <p>${duplicateCount} email duplikat telah dibersihkan dari setoran ini.</p>
+                    </div>
+                `;
+            }
+
+            if (invalidList.length > 0) {
+                infoHTML += `
+                    <div class="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 mb-3 space-y-1">
+                        <p class="font-bold">Terdapat ${invalidList.length} entri tidak valid:</p>
+                        <ul class="list-disc pl-4 space-y-0.5 max-h-24 overflow-y-auto">
+                            ${invalidList.map(err => `<li>${err}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            if (errorContainer) {
+                errorContainer.innerHTML = infoHTML;
+            }
+
+            if (validList.length === 0) {
+                alert('Tidak ada data Gmail unik & valid untuk dikirim!');
+                return;
+            }
+
+            let confirmMsg = `Ditemukan ${validList.length} Gmail unik dan valid.`;
+            if (duplicateCount > 0) confirmMsg += `\n- ${duplicateCount} email duplikat dibuang.`;
+            if (invalidList.length > 0) confirmMsg += `\n- ${invalidList.length} entri invalid diabaikan.`;
+            confirmMsg += `\n\nKirim ${validList.length} Gmail ke antrean admin?`;
+
+            if (confirm(confirmMsg)) {
+                db.setorQueue.push({
+                    id: Date.now(),
+                    user: db.currentUser,
+                    content: validList.join('\n'),
+                    count: validList.length,
+                    status: 'Pending',
+                    date: new Date().toLocaleDateString('id-ID')
+                });
+
+                saveDb();
+                alert(`Berhasil mengirim ${validList.length} Gmail unik!`);
+                document.getElementById('gmailList').value = '';
+                render();
+            }
+        }
+
+        function renderWithdrawTab(user) {
+            return `
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-xl text-white">
+                        <span class="text-xs text-blue-200">SALDO DOMPET UTAMA</span>
+                        <h2 class="text-xl font-bold mt-1">Rp ${user.balance.toLocaleString('id-ID')}</h2>
+                        <p class="text-[10px] text-blue-100 mt-1">Minimal pencairan Rp ${db.minWd.toLocaleString('id-ID')}.</p>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">Pilih Metode</label>
+                        <select id="wdMethod" class="w-full text-xs p-3 mt-1 border border-slate-200 rounded-xl outline-none bg-white">
+                            <option value="DANA">DANA</option>
+                            <option value="OVO">OVO</option>
+                            <option value="GoPay">GoPay</option>
+                            <option value="QRIS">QRIS / Bank Transfer</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">Nomor Akun E-Wallet / Rekening</label>
+                        <input type="text" id="wdAccount" placeholder="Contoh: 081234567890" class="w-full text-xs p-3 mt-1 border border-slate-200 rounded-xl outline-none">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">Nominal Penarikan (Rp)</label>
+                        <input type="number" id="wdAmount" placeholder="Min. ${db.minWd}" class="w-full text-xs p-3 mt-1 border border-slate-200 rounded-xl outline-none">
+                    </div>
+
+                    <button onclick="submitWd(${user.balance})" class="w-full bg-blue-600 text-white py-3 rounded-xl text-xs font-semibold hover:bg-blue-700 transition">Ajukan Penarikan</button>
+                </div>
+            `;
+        }
+
+        function submitWd(balance) {
+            const method = document.getElementById('wdMethod').value;
+            const account = document.getElementById('wdAccount').value.trim();
+            const amount = parseInt(document.getElementById('wdAmount').value);
+
+            if (!account || !amount) {
+                alert('Semua kolom harus diisi!');
+                return;
+            }
+            if (amount < db.minWd) {
+                alert(`Minimum penarikan adalah Rp ${db.minWd.toLocaleString('id-ID')}`);
+                return;
+            }
+            if (amount > balance) {
+                alert('Saldo Anda tidak mencukupi!');
+                return;
+            }
+
+            const userObj = db.users.find(x => x.username === db.currentUser);
+            userObj.balance -= amount;
+
+            db.withdraws.push({
+                id: Date.now(),
+                user: db.currentUser,
+                method,
+                account,
+                amount,
+                status: 'Pending',
+                date: new Date().toLocaleDateString('id-ID
