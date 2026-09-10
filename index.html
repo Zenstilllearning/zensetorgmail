@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZenSetorGmail - Platform Setor & Withdraw Gmail</title>
+    <title>ZenSetorGmail</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest" crossorigin="anonymous"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
@@ -37,6 +36,7 @@
 
         function render() {
             const app = document.getElementById('app');
+            if (!app) return;
             app.innerHTML = '';
 
             if (!db.currentUser) {
@@ -46,10 +46,6 @@
             } else {
                 app.innerHTML = renderDashboard();
             }
-
-            if (typeof lucide !== 'undefined' && lucide.createIcons) {
-                lucide.createIcons();
-            }
         }
 
         let isLoginMode = true;
@@ -57,8 +53,8 @@
             return `
                 <div class="p-6 flex flex-col justify-center min-h-screen">
                     <div class="text-center mb-8">
-                        <div class="inline-flex p-3 bg-emerald-100 text-emerald-600 rounded-2xl mb-3">
-                            <i data-lucide="mail" class="w-8 h-8">✉️</i>
+                        <div class="inline-flex p-3 bg-emerald-100 text-emerald-600 rounded-2xl mb-3 text-2xl">
+                            ✉️
                         </div>
                         <h1 class="text-2xl font-bold text-slate-900">ZenSetorGmail</h1>
                         <p class="text-sm text-slate-500 mt-1">Platform setor & withdraw gmail terpercaya</p>
@@ -69,16 +65,16 @@
                         
                         <div>
                             <label class="text-xs font-medium text-slate-600">Username</label>
-                            <div class="flex items-center mt-1 border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-emerald-500">
-                                <i data-lucide="user" class="w-4 h-4 text-slate-400 mr-2">👤</i>
+                            <div class="flex items-center mt-1 border border-slate-200 rounded-xl px-3 py-2.5">
+                                <span class="mr-2">👤</span>
                                 <input type="text" id="authUsername" placeholder="Masukkan username" class="w-full text-sm outline-none bg-transparent">
                             </div>
                         </div>
 
                         <div>
                             <label class="text-xs font-medium text-slate-600">Password</label>
-                            <div class="flex items-center mt-1 border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-emerald-500">
-                                <i data-lucide="lock" class="w-4 h-4 text-slate-400 mr-2">🔒</i>
+                            <div class="flex items-center mt-1 border border-slate-200 rounded-xl px-3 py-2.5">
+                                <span class="mr-2">🔒</span>
                                 <input type="password" id="authPassword" placeholder="Masukkan password" class="w-full text-sm outline-none bg-transparent">
                             </div>
                         </div>
@@ -173,19 +169,19 @@
 
                 <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 flex justify-around items-center text-xs text-slate-500 shadow-lg">
                     <button onclick="activeTab='home'; render();" class="flex flex-col items-center ${activeTab==='home'?'text-violet-600 font-semibold':''}">
-                        <i data-lucide="home" class="w-5 h-5 mb-1">🏠</i> Home
+                        <span class="text-base">🏠</span> Home
                     </button>
                     <button onclick="activeTab='withdraw'; render();" class="flex flex-col items-center ${activeTab==='withdraw'?'text-violet-600 font-semibold':''}">
-                        <i data-lucide="wallet" class="w-5 h-5 mb-1">💳</i> Withdraw
+                        <span class="text-base">💳</span> Withdraw
                     </button>
                     <button onclick="activeTab='riwayat'; render();" class="flex flex-col items-center ${activeTab==='riwayat'?'text-violet-600 font-semibold':''}">
-                        <i data-lucide="clock" class="w-5 h-5 mb-1">🕒</i> Riwayat
+                        <span class="text-base">🕒</span> Riwayat
                     </button>
                     <button onclick="activeTab='info'; render();" class="flex flex-col items-center ${activeTab==='info'?'text-violet-600 font-semibold':''}">
-                        <i data-lucide="info" class="w-5 h-5 mb-1">ℹ️</i> Info
+                        <span class="text-base">ℹ️</span> Info
                     </button>
                     <button onclick="activeTab='profil'; render();" class="flex flex-col items-center ${activeTab==='profil'?'text-violet-600 font-semibold':''}">
-                        <i data-lucide="user" class="w-5 h-5 mb-1">👤</i> Profil
+                        <span class="text-base">👤</span> Profil
                     </button>
                 </div>
             `;
@@ -198,16 +194,12 @@
             return `
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
-                        <div class="p-2 bg-violet-50 text-violet-600 rounded-xl inline-block mb-2">
-                            <i data-lucide="users" class="w-5 h-5">👥</i>
-                        </div>
+                        <div class="p-2 bg-violet-50 text-violet-600 rounded-xl inline-block mb-2 text-xl">👥</div>
                         <h3 class="text-lg font-bold text-slate-800">${totalUsers}</h3>
                         <p class="text-xs text-slate-400">Pengguna</p>
                     </div>
                     <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
-                        <div class="p-2 bg-violet-50 text-violet-600 rounded-xl inline-block mb-2">
-                            <i data-lucide="mail" class="w-5 h-5">✉️</i>
-                        </div>
+                        <div class="p-2 bg-violet-50 text-violet-600 rounded-xl inline-block mb-2 text-xl">✉️</div>
                         <h3 class="text-lg font-bold text-slate-800">${totalEmailsAll}</h3>
                         <p class="text-xs text-slate-400">Total Email Terverifikasi</p>
                     </div>
@@ -215,7 +207,7 @@
 
                 <div class="bg-violet-50 border border-violet-100 p-4 rounded-2xl mb-6">
                     <div class="flex items-center gap-2 mb-2 text-violet-700 font-semibold text-sm">
-                        <i data-lucide="bell" class="w-4 h-4">🔔</i> Pengumuman
+                        <span>🔔</span> Pengumuman
                     </div>
                     <p class="text-xs text-slate-600 leading-relaxed">${db.announcement}</p>
                 </div>
@@ -250,7 +242,6 @@
 
             lines.forEach((line, index) => {
                 const parts = line.split('|');
-                
                 if (parts.length >= 2) {
                     const email = parts[0].trim();
                     const emailLower = email.toLowerCase();
@@ -284,7 +275,7 @@
                 infoHTML += `
                     <div class="p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700 mb-2">
                         <p class="font-bold">⚠️ Otomatis Memfilter Duplikat:</p>
-                        <p>${duplicateCount} email duplikat telah dibersihkan dari setoran ini.</p>
+                        <p>${duplicateCount} email duplikat telah dibersihkan.</p>
                     </div>
                 `;
             }
@@ -300,20 +291,14 @@
                 `;
             }
 
-            if (errorContainer) {
-                errorContainer.innerHTML = infoHTML;
-            }
+            if (errorContainer) errorContainer.innerHTML = infoHTML;
 
             if (validList.length === 0) {
                 alert('Tidak ada data Gmail unik & valid untuk dikirim!');
                 return;
             }
 
-            let confirmMsg = `Ditemukan ${validList.length} Gmail unik dan valid.`;
-            if (duplicateCount > 0) confirmMsg += `\n- ${duplicateCount} email duplikat dibuang.`;
-            if (invalidList.length > 0) confirmMsg += `\n- ${invalidList.length} entri invalid diabaikan.`;
-            confirmMsg += `\n\nKirim ${validList.length} Gmail ke antrean admin?`;
-
+            let confirmMsg = `Ditemukan ${validList.length} Gmail unik dan valid. Kirim ke antrean admin?`;
             if (confirm(confirmMsg)) {
                 db.setorQueue.push({
                     id: Date.now(),
@@ -325,7 +310,7 @@
                 });
 
                 saveDb();
-                alert(`Berhasil mengirim ${validList.length} Gmail unik!`);
+                alert(`Berhasil mengirim ${validList.length} Gmail!`);
                 document.getElementById('gmailList').value = '';
                 render();
             }
@@ -351,7 +336,7 @@
                     </div>
 
                     <div>
-                        <label class="text-xs font-medium text-slate-600">Nomor Akun E-Wallet / Rekening</label>
+                        <label class="text-xs font-medium text-slate-600">Nomor Akun / Rekening</label>
                         <input type="text" id="wdAccount" placeholder="Contoh: 081234567890" class="w-full text-xs p-3 mt-1 border border-slate-200 rounded-xl outline-none">
                     </div>
 
@@ -393,4 +378,223 @@
                 account,
                 amount,
                 status: 'Pending',
-                date: new Date().toLocaleDateString('id-ID
+                date: new Date().toLocaleDateString('id-ID')
+            });
+
+            saveDb();
+            alert('Pengajuan withdraw berhasil dikirim!');
+            render();
+        }
+
+        function renderRiwayatTab() {
+            const mySetor = db.setorQueue.filter(x => x.user === db.currentUser);
+            const myWd = db.withdraws.filter(x => x.user === db.currentUser);
+
+            return `
+                <div class="space-y-4">
+                    <h3 class="font-semibold text-sm text-slate-800">Riwayat Setoran Gmail</h3>
+                    <div class="space-y-2">
+                        ${mySetor.length === 0 ? '<p class="text-xs text-slate-400">Belum ada riwayat setor.</p>' : mySetor.map(s => `
+                            <div class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center text-xs">
+                                <div>
+                                    <p class="font-semibold">${s.count} Email</p>
+                                    <span class="text-[10px] text-slate-400">${s.date}</span>
+                                </div>
+                                <span class="px-2 py-1 rounded-md font-medium ${s.status==='Success'?'bg-emerald-100 text-emerald-600':s.status==='Rejected'?'bg-red-100 text-red-600':'bg-amber-100 text-amber-600'}">${s.status}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <h3 class="font-semibold text-sm text-slate-800 pt-4">Riwayat Withdraw</h3>
+                    <div class="space-y-2">
+                        ${myWd.length === 0 ? '<p class="text-xs text-slate-400">Belum ada riwayat withdraw.</p>' : myWd.map(w => `
+                            <div class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center text-xs">
+                                <div>
+                                    <p class="font-semibold">${w.method} - Rp ${w.amount.toLocaleString('id-ID')}</p>
+                                    <span class="text-[10px] text-slate-400">${w.date} (${w.account})</span>
+                                </div>
+                                <span class="px-2 py-1 rounded-md font-medium ${w.status==='Success'?'bg-emerald-100 text-emerald-600':w.status==='Rejected'?'bg-red-100 text-red-600':'bg-amber-100 text-amber-600'}">${w.status}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderInfoTab() {
+            return `
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                    <h3 class="font-semibold text-sm text-slate-800">Ketentuan Layanan</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">1. Pastikan akun Gmail yang disetor aktif dan sesuai format (email|password).</p>
+                    <p class="text-xs text-slate-600 leading-relaxed">2. Rate per email saat ini adalah <strong>Rp ${db.rate.toLocaleString('id-ID')}</strong>.</p>
+                    <p class="text-xs text-slate-600 leading-relaxed">3. Proses verifikasi setoran maksimal 1x24 jam oleh Admin.</p>
+                    <p class="text-xs text-slate-600 leading-relaxed">4. Minimal penarikan saldo adalah <strong>Rp ${db.minWd.toLocaleString('id-ID')}</strong>.</p>
+                </div>
+            `;
+        }
+
+        function renderProfilTab(user) {
+            return `
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center font-bold text-lg">
+                            ${user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800">${user.username}</h3>
+                            <p class="text-xs text-slate-400">Member Status: Aktif</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-100 pt-3 space-y-2 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Total Email Diterima</span>
+                            <span class="font-semibold">${user.totalEmails || 0} Email</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Saldo Saat Ini</span>
+                            <span class="font-semibold text-emerald-600">Rp ${(user.balance || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+
+                    <button onclick="db.currentUser = null; saveDb(); render();" class="w-full bg-red-50 text-red-600 py-2.5 rounded-xl text-xs font-semibold hover:bg-red-100 transition">
+                        Logout
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderAdminPanel() {
+            return `
+                <div class="p-6 space-y-6">
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <div>
+                            <h1 class="text-lg font-bold text-slate-900">Panel Admin</h1>
+                            <p class="text-xs text-slate-500">Manage ZenSetorGmail</p>
+                        </div>
+                        <button onclick="db.currentUser = null; saveDb(); render();" class="bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg">Logout</button>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 space-y-3">
+                        <h3 class="font-bold text-sm text-slate-800">Pengaturan Layanan</h3>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <label class="text-slate-500">Rate Email (Rp)</label>
+                                <input type="number" id="adminRate" value="${db.rate}" class="w-full p-2 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="text-slate-500">Min. WD (Rp)</label>
+                                <input type="number" id="adminMinWd" value="${db.minWd}" class="w-full p-2 border rounded-lg">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500">Pengumuman</label>
+                            <textarea id="adminAnnounce" rows="2" class="w-full p-2 border rounded-lg text-xs">${db.announcement}</textarea>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="adminIsOpen" ${db.isOpen ? 'checked' : ''}>
+                            <label for="adminIsOpen" class="text-xs font-medium">Buka Pendaftaran / Setoran Gmail</label>
+                        </div>
+                        <button onclick="updateSettings()" class="w-full bg-emerald-500 text-white text-xs py-2 rounded-lg font-medium">Simpan Pengaturan</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="font-bold text-sm text-slate-800">Antrean Setoran Email</h3>
+                        ${db.setorQueue.filter(x => x.status === 'Pending').length === 0 ? '<p class="text-xs text-slate-400">Tidak ada setoran pending.</p>' : ''}
+                        ${db.setorQueue.filter(x => x.status === 'Pending').map(s => `
+                            <div class="bg-white p-3 rounded-xl border border-slate-100 space-y-2 text-xs">
+                                <div class="flex justify-between font-medium">
+                                    <span>${s.user} (${s.count} Email)</span>
+                                    <span class="text-slate-400">${s.date}</span>
+                                </div>
+                                <textarea readonly class="w-full p-2 bg-slate-50 rounded border text-[10px] font-mono">${s.content}</textarea>
+                                <div class="flex gap-2">
+                                    <button onclick="approveSetor(${s.id})" class="flex-1 bg-emerald-500 text-white py-1.5 rounded-lg">Approve</button>
+                                    <button onclick="rejectSetor(${s.id})" class="flex-1 bg-red-500 text-white py-1.5 rounded-lg">Reject</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="font-bold text-sm text-slate-800">Antrean Withdraw</h3>
+                        ${db.withdraws.filter(x => x.status === 'Pending').length === 0 ? '<p class="text-xs text-slate-400">Tidak ada penarikan pending.</p>' : ''}
+                        ${db.withdraws.filter(x => x.status === 'Pending').map(w => `
+                            <div class="bg-white p-3 rounded-xl border border-slate-100 space-y-2 text-xs">
+                                <div class="flex justify-between font-medium">
+                                    <span>${w.user} - Rp ${w.amount.toLocaleString('id-ID')}</span>
+                                    <span class="text-slate-400">${w.date}</span>
+                                </div>
+                                <p class="text-slate-600">${w.method}: ${w.account}</p>
+                                <div class="flex gap-2">
+                                    <button onclick="approveWd(${w.id})" class="flex-1 bg-emerald-500 text-white py-1.5 rounded-lg">Selesai (Transfer)</button>
+                                    <button onclick="rejectWd(${w.id})" class="flex-1 bg-red-500 text-white py-1.5 rounded-lg">Tolak (Refund)</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateSettings() {
+            db.rate = parseInt(document.getElementById('adminRate').value) || 2500;
+            db.minWd = parseInt(document.getElementById('adminMinWd').value) || 2500;
+            db.announcement = document.getElementById('adminAnnounce').value;
+            db.isOpen = document.getElementById('adminIsOpen').checked;
+            saveDb();
+            alert('Pengaturan berhasil diperbarui!');
+            render();
+        }
+
+        function approveSetor(id) {
+            const item = db.setorQueue.find(x => x.id === id);
+            if (!item) return;
+
+            item.status = 'Success';
+            const user = db.users.find(u => u.username === item.user);
+            if (user) {
+                user.balance += item.count * db.rate;
+                user.totalEmails += item.count;
+            }
+            saveDb();
+            render();
+        }
+
+        function rejectSetor(id) {
+            const item = db.setorQueue.find(x => x.id === id);
+            if (!item) return;
+
+            item.status = 'Rejected';
+            saveDb();
+            render();
+        }
+
+        function approveWd(id) {
+            const item = db.withdraws.find(x => x.id === id);
+            if (!item) return;
+
+            item.status = 'Success';
+            saveDb();
+            render();
+        }
+
+        function rejectWd(id) {
+            const item = db.withdraws.find(x => x.id === id);
+            if (!item) return;
+
+            item.status = 'Rejected';
+            const user = db.users.find(u => u.username === item.user);
+            if (user) {
+                user.balance += item.amount;
+            }
+            saveDb();
+            render();
+        }
+
+        window.onload = function() {
+            render();
+        };
+    </script>
+</body>
+</html>
