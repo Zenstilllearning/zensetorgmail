@@ -21,7 +21,7 @@
 
     <script>
         const ADMIN_USER = "Zen Kujou Takanashi Mikadono";
-        const ADMIN_PASS = "Zen Kujou";
+        const ADMIN_PASS = "ha12ha34";
 
         let db;
         try {
@@ -322,7 +322,7 @@
                             duplicateCount++;
                         } else {
                             seenEmails.add(emailLower);
-                            validList.push(`${email}|${password}`);
+                            validList.push({ email, password });
                         }
                     } else {
                         let reason = [];
@@ -367,13 +367,15 @@
 
             let confirmMsg = `Ditemukan ${validList.length} Gmail unik dan valid. Kirim ke antrean admin?`;
             if (confirm(confirmMsg)) {
-                db.setorQueue.push({
-                    id: Date.now(),
-                    user: db.currentUser,
-                    content: validList.join('\n'),
-                    count: validList.length,
-                    status: 'Pending',
-                    date: new Date().toLocaleDateString('id-ID')
+                validList.forEach(item => {
+                    db.setorQueue.push({
+                        id: Date.now() + Math.random(),
+                        user: db.currentUser,
+                        email: item.email,
+                        password: item.password,
+                        status: 'Pending',
+                        date: new Date().toLocaleDateString('id-ID')
+                    });
                 });
 
                 saveDb();
@@ -465,7 +467,7 @@
                         ${mySetor.length === 0 ? '<p class="text-xs text-slate-400">Belum ada riwayat setor.</p>' : mySetor.map(s => `
                             <div class="bg-white p-3.5 rounded-2xl border border-slate-100 flex justify-between items-center text-xs shadow-sm">
                                 <div>
-                                    <p class="font-bold text-slate-800">${s.count} Email</p>
+                                    <p class="font-bold text-slate-800 font-mono text-[11px]">${s.email || (s.count + ' Email')}</p>
                                     <span class="text-[10px] text-slate-400">${s.date}</span>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${s.status==='Success'?'bg-emerald-100 text-emerald-600':s.status==='Rejected'?'bg-red-100 text-red-600':'bg-amber-100 text-amber-600'}">${s.status}</span>
@@ -547,6 +549,8 @@
                 `;
             }
 
+            const pendingSetor = db.setorQueue.filter(x => x.status === 'Pending');
+
             return `
                 <div class="space-y-6">
                     <div class="flex justify-between items-center border-b border-slate-200 pb-3">
@@ -580,19 +584,45 @@
                         <button onclick="updateSettings()" class="w-full bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold">Simpan Pengaturan</button>
                     </div>
 
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 space-y-3 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-xs text-slate-800">Database Member Registered</h3>
+                            <span class="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">${db.users.length} Member</span>
+                        </div>
+                        <div class="space-y-2 max-h-56 overflow-y-auto">
+                            ${db.users.length === 0 ? '<p class="text-xs text-slate-400">Belum ada member terdaftar.</p>' : db.users.map(u => `
+                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center text-xs">
+                                    <div>
+                                        <p class="font-bold text-slate-800">${u.username}</p>
+                                        <p class="text-[10px] text-slate-400">Saldo: Rp ${(u.balance||0).toLocaleString('id-ID')} | Email: ${u.totalEmails||0}</p>
+                                    </div>
+                                    <button onclick="deleteMember('${u.username}')" class="bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-sm">
+                                        Hapus Akun
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
                     <div class="space-y-3">
-                        <h3 class="font-bold text-xs text-slate-800">Antrean Setoran Email</h3>
-                        ${db.setorQueue.filter(x => x.status === 'Pending').length === 0 ? '<p class="text-xs text-slate-400">Tidak ada setoran pending.</p>' : ''}
-                        ${db.setorQueue.filter(x => x.status === 'Pending').map(s => `
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-xs text-slate-800">Antrean Setoran Gmail (Per-Item)</h3>
+                            <span class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">${pendingSetor.length} Pending</span>
+                        </div>
+                        ${pendingSetor.length === 0 ? '<p class="text-xs text-slate-400">Tidak ada setoran pending.</p>' : ''}
+                        ${pendingSetor.map(s => `
                             <div class="bg-white p-3.5 rounded-2xl border border-slate-100 space-y-2 text-xs shadow-sm">
                                 <div class="flex justify-between font-bold">
-                                    <span>${s.user} (${s.count} Email)</span>
+                                    <span class="text-purple-600">User: ${s.user}</span>
                                     <span class="text-slate-400 font-normal text-[10px]">${s.date}</span>
                                 </div>
-                                <textarea readonly class="w-full p-2 bg-slate-50 rounded-xl border text-[10px] font-mono">${s.content}</textarea>
-                                <div class="flex gap-2">
-                                    <button onclick="approveSetor(${s.id})" class="flex-1 bg-emerald-500 text-white py-2 rounded-xl font-bold">Approve</button>
-                                    <button onclick="rejectSetor(${s.id})" class="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold">Reject</button>
+                                <div class="bg-slate-50 p-2.5 rounded-xl border font-mono text-[11px] space-y-1">
+                                    <p class="text-slate-800"><strong>Email:</strong> ${s.email || 'N/A'}</p>
+                                    <p class="text-slate-600"><strong>Pass:</strong> ${s.password || 'N/A'}</p>
+                                </div>
+                                <div class="flex gap-2 pt-1">
+                                    <button onclick="approveSingleSetor('${s.id}')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-xl font-bold text-xs shadow-sm">Approve</button>
+                                    <button onclick="rejectSingleSetor('${s.id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-xl font-bold text-xs shadow-sm">Reject</button>
                                 </div>
                             </div>
                         `).join('')}
@@ -629,22 +659,33 @@
             render();
         }
 
-        function approveSetor(id) {
-            const item = db.setorQueue.find(x => x.id === id);
+        function deleteMember(username) {
+            if (confirm(`Yakin ingin menghapus akun member "${username}" secara permanen?`)) {
+                db.users = db.users.filter(u => u.username !== username);
+                db.setorQueue = db.setorQueue.filter(s => s.user !== username);
+                db.withdraws = db.withdraws.filter(w => w.user !== username);
+                saveDb();
+                alert(`Akun "${username}" telah dihapus secara permanen!`);
+                render();
+            }
+        }
+
+        function approveSingleSetor(id) {
+            const item = db.setorQueue.find(x => String(x.id) === String(id));
             if (!item) return;
 
             item.status = 'Success';
             const user = db.users.find(u => u.username === item.user);
             if (user) {
-                user.balance = (user.balance || 0) + (item.count * db.rate);
-                user.totalEmails = (user.totalEmails || 0) + item.count;
+                user.balance = (user.balance || 0) + db.rate;
+                user.totalEmails = (user.totalEmails || 0) + 1;
             }
             saveDb();
             render();
         }
 
-        function rejectSetor(id) {
-            const item = db.setorQueue.find(x => x.id === id);
+        function rejectSingleSetor(id) {
+            const item = db.setorQueue.find(x => String(x.id) === String(id));
             if (!item) return;
 
             item.status = 'Rejected';
