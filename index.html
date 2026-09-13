@@ -18,7 +18,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getDatabase, ref, set, onValue, push, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-        // Konfigurasi lengkap Firebase milikmu
         const firebaseConfig = {
             apiKey: "AIzaSyDc2SPUv8pvy4CU2v4InbHbGxbdBqcvRM0",
             authDomain: "zensetor-f3640.firebaseapp.com",
@@ -30,11 +29,9 @@
             measurementId: "G-TCSM336833"
         };
 
-        // Inisialisasi Firebase & Realtime Database
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Global DB State
         window.db = {
             users: {},
             currentUser: null,
@@ -48,7 +45,6 @@
 
         window.fb = { ref, set, onValue, push, update, database };
 
-        // Sync Realtime Data dari Firebase
         onValue(ref(database, '/'), (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -168,7 +164,6 @@
                     return;
                 }
                 
-                // Simpan User Baru ke Firebase Database
                 const userRef = fb.ref(fb.database, 'users/' + u);
                 fb.set(userRef, { username: u, password: p, balance: 0, totalEmails: 0 });
                 
@@ -379,296 +374,4 @@
                     <div class="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 mb-3 space-y-1">
                         <p class="font-bold">Terdapat ${invalidList.length} entri tidak valid:</p>
                         <ul class="list-disc pl-4 space-y-0.5 max-h-24 overflow-y-auto">
-                            ${invalidList.map(err => `<li>${err}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            }
-
-            if (errorContainer) errorContainer.innerHTML = infoHTML;
-
-            if (validList.length === 0) {
-                alert('Tidak ada data Gmail unik & valid untuk dikirim!');
-                return;
-            }
-
-            if (confirm(`Ditemukan ${validList.length} Gmail unik dan valid. Kirim ke antrean admin?`)) {
-                const queueRef = fb.ref(fb.database, 'setorQueue');
-                validList.forEach(item => {
-                    const newRef = fb.push(queueRef);
-                    fb.set(newRef, {
-                        id: newRef.key,
-                        user: db.currentUser,
-                        email: item.email,
-                        password: item.password,
-                        status: 'Pending',
-                        date: new Date().toLocaleDateString('id-ID')
-                    });
-                });
-
-                alert(`Berhasil mengirim ${validList.length} Gmail ke Firebase!`);
-                el.value = '';
-            }
-        }
-
-        function renderWithdrawTab(user) {
-            return `
-                <div class="space-y-4">
-                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 rounded-3xl shadow-lg shadow-emerald-500/20">
-                        <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100">Saldo Tersedia</span>
-                        <h2 class="text-3xl font-black mt-1">Rp ${(user.balance || 0).toLocaleString('id-ID')}</h2>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xl space-y-4">
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                            <h3 class="font-bold text-sm text-slate-800">Form Withdraw</h3>
-                            <span class="text-xs font-semibold text-emerald-600">Min: Rp ${(db.minWd || 3500).toLocaleString('id-ID')}</span>
-                        </div>
-
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600">Nominal Penarikan</label>
-                            <input type="number" id="wdAmount" placeholder="Nominal Rp" class="w-full text-xs p-3.5 mt-1 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 bg-slate-50/50">
-                        </div>
-
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600">Metode Pembayaran</label>
-                            <select id="wdMethod" class="w-full text-xs p-3.5 mt-1 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 bg-slate-50/50">
-                                <option value="DANA">DANA</option>
-                                <option value="GOPAY">GOPAY</option>
-                                <option value="OVO">OVO</option>
-                                <option value="BANK">BANK</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600">Nomor Rekening / E-Wallet</label>
-                            <input type="text" id="wdAccount" placeholder="Nomor E-Wallet/Rekening" class="w-full text-xs p-3.5 mt-1 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 bg-slate-50/50">
-                        </div>
-
-                        <button onclick="submitWithdraw()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg shadow-emerald-500/20 hover:opacity-95 transition">
-                            Tarik Saldo
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function submitWithdraw() {
-            const amount = parseInt(document.getElementById('wdAmount').value);
-            const method = document.getElementById('wdMethod').value;
-            const account = document.getElementById('wdAccount').value.trim();
-            
-            const userList = Object.values(db.users || {});
-            const user = userList.find(x => x.username === db.currentUser);
-
-            if (!amount || !account) {
-                alert('Lengkapi nominal dan nomor tujuan!');
-                return;
-            }
-
-            if (amount < (db.minWd || 3500)) {
-                alert(`Minimal penarikan adalah Rp ${(db.minWd || 3500).toLocaleString('id-ID')}!`);
-                return;
-            }
-
-            if (!user || user.balance < amount) {
-                alert('Saldo kamu tidak mencukupi!');
-                return;
-            }
-
-            // Potong saldo di Firebase
-            const newBal = user.balance - amount;
-            fb.update(fb.ref(fb.database, 'users/' + db.currentUser), { balance: newBal });
-
-            // Push data withdraw ke Firebase
-            const wdRef = fb.ref(fb.database, 'withdraws');
-            const newWdRef = fb.push(wdRef);
-            fb.set(newWdRef, {
-                id: newWdRef.key,
-                user: db.currentUser,
-                amount: amount,
-                method: method,
-                account: account,
-                status: 'Pending',
-                date: new Date().toLocaleDateString('id-ID')
-            });
-
-            alert('Permintaan penarikan berhasil diajukan!');
-        }
-
-        function renderRiwayatTab() {
-            const setorList = Object.values(db.setorQueue || {});
-            const wdList = Object.values(db.withdraws || {});
-
-            const mySetor = setorList.filter(x => x.user === db.currentUser).reverse();
-            const myWd = wdList.filter(x => x.user === db.currentUser).reverse();
-
-            return `
-                <div class="space-y-4">
-                    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                        <h3 class="font-bold text-sm text-slate-800 mb-3">Riwayat Setor Gmail</h3>
-                        <div class="space-y-2 max-h-60 overflow-y-auto">
-                            ${mySetor.length === 0 ? '<p class="text-xs text-slate-400">Belum ada riwayat setor.</p>' : ''}
-                            ${mySetor.map(item => `
-                                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-2xl text-xs">
-                                    <div class="truncate max-w-[180px]">
-                                        <p class="font-bold text-slate-700 truncate">${item.email}</p>
-                                        <p class="text-[10px] text-slate-400">${item.date}</p>
-                                    </div>
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.status === 'Approved' ? 'bg-emerald-100 text-emerald-600' : item.status === 'Rejected' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}">
-                                        ${item.status}
-                                    </span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                        <h3 class="font-bold text-sm text-slate-800 mb-3">Riwayat Withdraw</h3>
-                        <div class="space-y-2 max-h-60 overflow-y-auto">
-                            ${myWd.length === 0 ? '<p class="text-xs text-slate-400">Belum ada riwayat withdraw.</p>' : ''}
-                            ${myWd.map(item => `
-                                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-2xl text-xs">
-                                    <div>
-                                        <p class="font-bold text-slate-700">Rp ${item.amount.toLocaleString('id-ID')}</p>
-                                        <p class="text-[10px] text-slate-400">${item.method} - ${item.account} (${item.date})</p>
-                                    </div>
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.status === 'Success' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">
-                                        ${item.status}
-                                    </span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderInfoTab() {
-            return `
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4 text-xs text-slate-600 leading-relaxed">
-                    <h3 class="font-bold text-base text-slate-800">Informasi & Aturan</h3>
-                    <p>Selamat datang di <b>ZenSetorGmail</b>! Tempat paling aman dan cepat untuk menjual akun Gmail milikmu.</p>
-                    <ul class="list-disc pl-4 space-y-2">
-                        <li>Rate harga per email: <b>Rp ${(db.rate || 3500).toLocaleString('id-ID')}</b></li>
-                        <li>Minimal penarikan saldo: <b>Rp ${(db.minWd || 3500).toLocaleString('id-ID')}</b></li>
-                        <li>Proses penarikan diproses cepat via DANA, GOPAY, OVO, atau BANK.</li>
-                        <li>Pastikan format setoran: <code>email@gmail.com|password</code></li>
-                    </ul>
-                </div>
-            `;
-        }
-
-        function renderProfilTab(user) {
-            return `
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-center space-y-4">
-                    <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-full mx-auto flex items-center justify-center text-2xl font-bold">
-                        👤
-                    </div>
-                    <div>
-                        <h2 class="font-bold text-lg text-slate-800">${db.currentUser}</h2>
-                        <p class="text-xs text-slate-400">Status: Member</p>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-2xl text-left space-y-2 text-xs">
-                        <div class="flex justify-between">
-                            <span class="text-slate-500">Saldo:</span>
-                            <span class="font-bold text-slate-800">Rp ${(user.balance || 0).toLocaleString('id-ID')}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-500">Total Email ACC:</span>
-                            <span class="font-bold text-slate-800">${user.totalEmails || 0} Email</span>
-                        </div>
-                    </div>
-                    <button onclick="db.currentUser=null; render();" class="w-full bg-red-50 text-red-600 py-3 rounded-2xl text-xs font-bold hover:bg-red-100 transition">
-                        Logout Akun
-                    </button>
-                </div>
-            `;
-        }
-
-        function renderAdminPanel() {
-            if (db.currentUser !== ADMIN_USER) {
-                return `
-                    <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-center">
-                        <h3 class="font-bold text-red-600 text-sm">Akses Ditolak!</h3>
-                        <p class="text-xs text-slate-500 mt-1">Kamu harus login menggunakan akun Admin untuk mengakses panel ini.</p>
-                    </div>
-                `;
-            }
-
-            const setorList = Object.entries(db.setorQueue || {}).map(([key, val]) => ({ ...val, _key: key }));
-
-            return `
-                <div class="space-y-4">
-                    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-3">
-                        <h3 class="font-bold text-sm text-purple-600">Pengaturan Web Admin</h3>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                                <label class="font-semibold text-slate-600">Rate per Email</label>
-                                <input type="number" id="adminRate" value="${db.rate || 3500}" class="w-full p-2 border rounded-xl mt-1">
-                            </div>
-                            <div>
-                                <label class="font-semibold text-slate-600">Min Withdraw</label>
-                                <input type="number" id="adminMinWd" value="${db.minWd || 3500}" class="w-full p-2 border rounded-xl mt-1">
-                            </div>
-                        </div>
-                        <button onclick="updateAdminConfig()" class="w-full bg-purple-600 text-white text-xs font-bold py-2.5 rounded-xl">Simpan Pengaturan</button>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-3">
-                        <h3 class="font-bold text-sm text-slate-800">Antrean Setor Gmail</h3>
-                        <div class="space-y-2 max-h-60 overflow-y-auto text-xs">
-                            ${setorList.length === 0 ? '<p class="text-slate-400">Tidak ada antrean.</p>' : ''}
-                            ${setorList.map(item => `
-                                <div class="p-3 bg-slate-50 rounded-2xl space-y-1 border border-slate-100">
-                                    <div class="flex justify-between font-bold">
-                                        <span>${item.user}</span>
-                                        <span class="${item.status==='Approved'?'text-emerald-600':item.status==='Rejected'?'text-red-600':'text-amber-600'}">${item.status}</span>
-                                    </div>
-                                    <p class="font-mono text-[11px] text-slate-600 break-all">${item.email}|${item.password}</p>
-                                    ${item.status === 'Pending' ? `
-                                        <div class="flex gap-2 pt-1">
-                                            <button onclick="processSetorQueue('${item._key}', '${item.user}', true)" class="flex-1 bg-emerald-500 text-white font-bold py-1 rounded-lg text-[10px]">ACC</button>
-                                            <button onclick="processSetorQueue('${item._key}', '${item.user}', false)" class="flex-1 bg-red-500 text-white font-bold py-1 rounded-lg text-[10px]">Tolak</button>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function updateAdminConfig() {
-            const r = parseInt(document.getElementById('adminRate').value) || 3500;
-            const w = parseInt(document.getElementById('adminMinWd').value) || 3500;
-            
-            fb.update(fb.ref(fb.database, '/'), {
-                rate: r,
-                minWd: w
-            });
-            alert('Pengaturan berhasil disimpan di Firebase!');
-        }
-
-        function processSetorQueue(key, username, isApprove) {
-            const status = isApprove ? 'Approved' : 'Rejected';
-            
-            // Update status antrean di Firebase
-            fb.update(fb.ref(fb.database, 'setorQueue/' + key), { status: status });
-
-            // Jika disetujui, update saldo member di Firebase
-            if (isApprove) {
-                const userObj = db.users[username] || { balance: 0, totalEmails: 0 };
-                const curBal = userObj.balance || 0;
-                const curTotal = userObj.totalEmails || 0;
-
-                fb.update(fb.ref(fb.database, 'users/' + username), {
-                    balance: curBal + (db.rate || 3500),
-                    totalEmails: curTotal + 1
-                });
-            }
-        }
-    </script>
-</body>
-</html>
+                  
