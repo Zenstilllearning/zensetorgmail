@@ -13,16 +13,18 @@
             backdrop-filter: blur(8px);
         }
     </style>
-    <!-- Firebase SDK Compat Version -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
 
     <div id="app" class="max-w-md mx-auto w-full bg-slate-50 min-h-screen shadow-2xl flex flex-col justify-between relative pb-20">
+        <div class="p-8 text-center text-slate-400 font-semibold text-xs">Memuat ZenSetorGmail...</div>
     </div>
 
-    <script>
+    <!-- Firebase SDK V9 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyDc2SPUv8pvy4CU2v4InbHbGxbdBqcvRM0",
             authDomain: "zensetor-f3640.firebaseapp.com",
@@ -34,10 +36,8 @@
             measurementId: "G-TCSM336833"
         };
 
-        if (typeof firebase !== 'undefined') {
-            firebase.initializeApp(firebaseConfig);
-            window.database = firebase.database();
-        }
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
         window.db = {
             users: {},
@@ -56,32 +56,33 @@
         let isLoginMode = true;
         let activeTab = 'home';
 
-        if (window.database) {
-            window.database.ref('/').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    window.db.users = data.users || {};
-                    window.db.rate = data.rate ?? 3500;
-                    window.db.minWd = data.minWd ?? 3500;
-                    window.db.isOpen = data.isOpen ?? true;
-                    window.db.announcement = data.announcement || window.db.announcement;
-                    window.db.withdraws = data.withdraws || {};
-                    window.db.setorQueue = data.setorQueue || {};
-                }
-                render();
-            });
-        }
+        // Realtime Listener Firebase
+        onValue(ref(database, '/'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                window.db.users = data.users || {};
+                window.db.rate = data.rate ?? 3500;
+                window.db.minWd = data.minWd ?? 3500;
+                window.db.isOpen = data.isOpen ?? true;
+                window.db.announcement = data.announcement || window.db.announcement;
+                window.db.withdraws = data.withdraws || {};
+                window.db.setorQueue = data.setorQueue || {};
+            }
+            render();
+        }, (error) => {
+            console.error("Firebase Error:", error);
+        });
 
-        function render() {
-            const app = document.getElementById('app');
-            if (!app) return;
+        window.render = function() {
+            const container = document.getElementById('app');
+            if (!container) return;
             
             if (!db.currentUser) {
-                app.innerHTML = renderAuth();
+                container.innerHTML = renderAuth();
             } else {
-                app.innerHTML = renderDashboard();
+                container.innerHTML = renderDashboard();
             }
-        }
+        };
 
         function renderAuth() {
             return `
@@ -113,13 +114,13 @@
                             </div>
                         </div>
 
-                        <button onclick="handleAuth()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-purple-500/25 hover:opacity-95 transition">
+                        <button onclick="window.handleAuth()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-purple-500/25 hover:opacity-95 transition">
                             ${isLoginMode ? 'Login' : 'Daftar'}
                         </button>
 
                         <p class="text-center text-xs text-slate-500 mt-4">
                             ${isLoginMode ? 'Belum punya akun?' : 'Sudah punya akun?'} 
-                            <button onclick="isLoginMode = !isLoginMode; render();" class="text-purple-600 font-bold ml-1">
+                            <button onclick="window.switchAuthMode()" class="text-purple-600 font-bold ml-1">
                                 ${isLoginMode ? 'Daftar sini' : 'Login sini'}
                             </button>
                         </p>
@@ -128,7 +129,12 @@
             `;
         }
 
-        function handleAuth() {
+        window.switchAuthMode = function() {
+            isLoginMode = !isLoginMode;
+            render();
+        };
+
+        window.handleAuth = function() {
             const u = document.getElementById('authUsername').value.trim();
             const p = document.getElementById('authPassword').value.trim();
 
@@ -164,14 +170,11 @@
                     return;
                 }
                 
-                if (window.database) {
-                    window.database.ref('users/' + u).set({ username: u, password: p, balance: 0, totalEmails: 0 });
-                }
-                
+                set(ref(database, 'users/' + u), { username: u, password: p, balance: 0, totalEmails: 0 });
                 db.currentUser = u;
                 render();
             }
-        }
+        };
 
         function renderDashboard() {
             const userList = Object.values(db.users || {});
@@ -180,7 +183,7 @@
             return `
                 <div class="pb-6">
                     <div class="px-5 pt-4 pb-2 flex justify-end">
-                        <button onclick="activeTab='info'; render();" class="w-8 h-8 rounded-full bg-slate-200/60 text-slate-600 flex items-center justify-center font-bold text-sm">
+                        <button onclick="window.setTab('info')" class="w-8 h-8 rounded-full bg-slate-200/60 text-slate-600 flex items-center justify-center font-bold text-sm">
                             ?
                         </button>
                     </div>
@@ -197,37 +200,42 @@
                 </div>
 
                 <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-100 px-3 py-2 flex justify-around items-center text-[10px] font-semibold text-slate-400 shadow-2xl z-50">
-                    <button onclick="activeTab='home'; render();" class="flex flex-col items-center gap-1 ${activeTab==='home'?'text-purple-600':''}">
+                    <button onclick="window.setTab('home')" class="flex flex-col items-center gap-1 ${activeTab==='home'?'text-purple-600':''}">
                         <div class="p-1.5 rounded-xl ${activeTab==='home'?'bg-purple-100':''}">🏠</div>
                         Home
                     </button>
-                    <button onclick="activeTab='setor'; render();" class="flex flex-col items-center gap-1 ${activeTab==='setor'?'text-purple-600':''}">
+                    <button onclick="window.setTab('setor')" class="flex flex-col items-center gap-1 ${activeTab==='setor'?'text-purple-600':''}">
                         <div class="p-1.5 rounded-xl ${activeTab==='setor'?'bg-purple-100':''}">🚀</div>
                         Setor
                     </button>
-                    <button onclick="activeTab='withdraw'; render();" class="flex flex-col items-center gap-1 ${activeTab==='withdraw'?'text-purple-600':''}">
+                    <button onclick="window.setTab('withdraw')" class="flex flex-col items-center gap-1 ${activeTab==='withdraw'?'text-purple-600':''}">
                         <div class="p-1.5 rounded-xl ${activeTab==='withdraw'?'bg-purple-100':''}">💸</div>
                         Withdraw
                     </button>
-                    <button onclick="activeTab='riwayat'; render();" class="flex flex-col items-center gap-1 ${activeTab==='riwayat'?'text-purple-600':''}">
+                    <button onclick="window.setTab('riwayat')" class="flex flex-col items-center gap-1 ${activeTab==='riwayat'?'text-purple-600':''}">
                         <div class="p-1.5 rounded-xl ${activeTab==='riwayat'?'bg-purple-100':''}">🕒</div>
                         Riwayat
                     </button>
-                    <button onclick="activeTab='info'; render();" class="flex flex-col items-center gap-1 ${activeTab==='info'?'text-purple-600':''}">
+                    <button onclick="window.setTab('info')" class="flex flex-col items-center gap-1 ${activeTab==='info'?'text-purple-600':''}">
                         <div class="p-1.5 rounded-xl ${activeTab==='info'?'bg-purple-100':''}">ℹ️</div>
                         Info
                     </button>
-                    <button onclick="activeTab='profil'; render();" class="flex flex-col items-center gap-1 ${activeTab==='profil'?'text-purple-600':''}">
+                    <button onclick="window.setTab('profil')" class="flex flex-col items-center gap-1 ${activeTab==='profil'?'text-purple-600':''}">
                         <div class="p-1.5 rounded-xl ${activeTab==='profil'?'bg-purple-100':''}">👤</div>
                         Profil
                     </button>
-                    <button onclick="activeTab='admin'; render();" class="flex flex-col items-center gap-1 ${activeTab==='admin'?'text-purple-600':''}">
+                    <button onclick="window.setTab('admin')" class="flex flex-col items-center gap-1 ${activeTab==='admin'?'text-purple-600':''}">
                         <div class="p-1.5 rounded-xl ${activeTab==='admin'?'bg-purple-100':''}">🛡️</div>
                         Admin
                     </button>
                 </div>
             `;
         }
+
+        window.setTab = function(tab) {
+            activeTab = tab;
+            render();
+        };
 
         function renderHomeTab(user) {
             const userList = Object.values(db.users || {});
@@ -245,7 +253,7 @@
                     <p class="text-xs text-purple-100 leading-relaxed mb-6 font-medium">Setor Gmail, langsung cuan dengan rate terbaik di pasaran ⚡</p>
 
                     <div class="flex items-center gap-2 mb-6">
-                        <button onclick="toggleOpenStatus()" class="px-3.5 py-1.5 ${db.isOpen ? 'bg-emerald-400' : 'bg-red-500'} text-white text-[10px] font-black rounded-full tracking-wider hover:opacity-90">
+                        <button onclick="window.toggleOpenStatus()" class="px-3.5 py-1.5 ${db.isOpen ? 'bg-emerald-400' : 'bg-red-500'} text-white text-[10px] font-black rounded-full tracking-wider hover:opacity-90">
                             ${db.isOpen ? 'OPEN' : 'CLOSE'}
                         </button>
                         <span class="glass-card px-3.5 py-1.5 text-white text-[10px] font-bold rounded-full flex items-center gap-1 border border-white/20">
@@ -253,7 +261,7 @@
                         </span>
                     </div>
 
-                    <button onclick="activeTab='setor'; render();" class="w-full bg-white text-purple-700 font-bold py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-slate-50 transition text-xs">
+                    <button onclick="window.setTab('setor')" class="w-full bg-white text-purple-700 font-bold py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-slate-50 transition text-xs">
                         Mulai Sekarang ➔
                     </button>
                 </div>
@@ -292,10 +300,10 @@
             `;
         }
 
-        function toggleOpenStatus() {
+        window.toggleOpenStatus = function() {
             if (db.currentUser !== ADMIN_USER) return;
-            if (window.database) window.database.ref('/').update({ isOpen: !db.isOpen });
-        }
+            update(ref(database, '/'), { isOpen: !db.isOpen });
+        };
 
         function renderSetorTab(user) {
             return `
@@ -308,7 +316,7 @@
                     ${db.isOpen ? `
                         <div id="validationError"></div>
                         <textarea id="gmailList" rows="6" placeholder="email@gmail.com|password (Satu per baris)" class="w-full text-xs p-3.5 border border-slate-200 rounded-2xl outline-none focus:border-purple-500 font-mono bg-slate-50/50"></textarea>
-                        <button onclick="submitSetor()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg shadow-purple-500/20 hover:opacity-95 transition">
+                        <button onclick="window.submitSetor()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg shadow-purple-500/20 hover:opacity-95 transition">
                             Kirim Setoran Sekarang
                         </button>
                     ` : `
@@ -318,7 +326,7 @@
             `;
         }
 
-        function submitSetor() {
+        window.submitSetor = function() {
             const el = document.getElementById('gmailList');
             if (!el) return;
             const rawVal = el.value.trim();
@@ -370,11 +378,4 @@
                 infoHTML += `
                     <div class="p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700 mb-2">
                         <p class="font-bold">⚠️ Otomatis Memfilter Duplikat:</p>
-                        <p>${duplicateCount} email duplikat telah dibersihkan.</p>
-                    </div>
-                `;
-            }
-
-            if (invalidList.length > 0) {
-                infoHTML += `
-                    <div class="p-3 bg-red-50 bo
+                        <p>${d
