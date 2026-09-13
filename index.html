@@ -17,7 +17,11 @@
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
 
     <div id="app" class="max-w-md mx-auto w-full bg-slate-50 min-h-screen shadow-2xl flex flex-col justify-between relative pb-20">
-        <div class="p-8 text-center text-slate-400 font-semibold text-xs">Memuat ZenSetorGmail...</div>
+        <div class="p-8 text-center text-slate-500 font-semibold text-xs flex flex-col items-center justify-center min-h-screen">
+            <div class="animate-spin text-3xl mb-3">⚡</div>
+            <span>Memuat ZenSetorGmail...</span>
+            <p class="text-[10px] text-slate-400 mt-2">Jika tidak muncul, pastikan koneksi internet lancar.</p>
+        </div>
     </div>
 
     <!-- Firebase SDK V9 Modular -->
@@ -36,8 +40,13 @@
             measurementId: "G-TCSM336833"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        let database = null;
+        try {
+            const app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+        } catch (e) {
+            console.error("Gagal Inisialisasi Firebase:", e);
+        }
 
         window.db = {
             users: {},
@@ -50,37 +59,44 @@
             setorQueue: {}
         };
 
-        const ADMIN_USER = "Zen Kujou";
+        const ADMIN_USER = "Zen Kujou Takanashi Mikadono";
         const ADMIN_PASS = "ha12ha34";
 
         let isLoginMode = true;
         let activeTab = 'home';
         let hasRendered = false;
 
-        // Fallback jika koneksi lambat
+        // Paksa Render jika Firebase Lambat (Mencegah Blank Putih)
         setTimeout(() => {
             if (!hasRendered) {
                 render();
             }
-        }, 1500);
+        }, 1000);
 
-        // Realtime Listener Firebase
-        onValue(ref(database, '/'), (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                window.db.users = data.users || {};
-                window.db.rate = data.rate ?? 3500;
-                window.db.minWd = data.minWd ?? 3500;
-                window.db.isOpen = data.isOpen ?? true;
-                window.db.announcement = data.announcement || window.db.announcement;
-                window.db.withdraws = data.withdraws || {};
-                window.db.setorQueue = data.setorQueue || {};
+        // Firebase Listener
+        if (database) {
+            try {
+                onValue(ref(database, '/'), (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        window.db.users = data.users || {};
+                        window.db.rate = data.rate ?? 3500;
+                        window.db.minWd = data.minWd ?? 3500;
+                        window.db.isOpen = data.isOpen ?? true;
+                        window.db.announcement = data.announcement || window.db.announcement;
+                        window.db.withdraws = data.withdraws || {};
+                        window.db.setorQueue = data.setorQueue || {};
+                    }
+                    render();
+                }, (err) => {
+                    console.error("Firebase Error / Permission Denied:", err);
+                    render();
+                });
+            } catch (err) {
+                console.error("Error Listening Database:", err);
+                render();
             }
-            render();
-        }, (error) => {
-            console.error("Firebase Security / Network Error:", error);
-            render();
-        });
+        }
 
         window.render = function() {
             hasRendered = true;
@@ -180,7 +196,7 @@
                     return;
                 }
                 
-                set(ref(database, 'users/' + u), { username: u, password: p, balance: 0, totalEmails: 0 });
+                if (database) set(ref(database, 'users/' + u), { username: u, password: p, balance: 0, totalEmails: 0 });
                 db.currentUser = u;
                 render();
             }
@@ -263,9 +279,9 @@
                     <p class="text-xs text-purple-100 leading-relaxed mb-6 font-medium">Setor Gmail, langsung cuan dengan rate terbaik di pasaran ⚡</p>
 
                     <div class="flex items-center gap-2 mb-6">
-                        <button onclick="window.toggleOpenStatus()" class="px-3.5 py-1.5 ${db.isOpen ? 'bg-emerald-400' : 'bg-red-500'} text-white text-[10px] font-black rounded-full tracking-wider hover:opacity-90">
-                            ${db.isOpen ? 'OPEN' : 'CLOSE'}
-                        </button>
+                        <span class="px-3.5 py-1.5 ${db.isOpen ? 'bg-emerald-400' : 'bg-red-500'} text-white text-[10px] font-black rounded-full tracking-wider">
+                            STATUS: ${db.isOpen ? 'OPEN' : 'CLOSE'}
+                        </span>
                         <span class="glass-card px-3.5 py-1.5 text-white text-[10px] font-bold rounded-full flex items-center gap-1 border border-white/20">
                             ⚡ Rp ${(db.rate || 3500).toLocaleString('id-ID')}/email
                         </span>
@@ -310,11 +326,6 @@
             `;
         }
 
-        window.toggleOpenStatus = function() {
-            if (db.currentUser !== ADMIN_USER) return;
-            update(ref(database, '/'), { isOpen: !db.isOpen });
-        };
-
         function renderSetorTab(user) {
             return `
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xl space-y-4">
@@ -330,7 +341,11 @@
                             Kirim Setoran Sekarang
                         </button>
                     ` : `
-                        <div class="p-4 bg-red-50 text-red-600 text-xs rounded-2xl text-center font-bold">Mohon Maaf, Setoran Gmail sedang CLOSE.</div>
+                        <div class="p-6 bg-red-50 border border-red-100 rounded-2xl text-center space-y-2">
+                            <div class="text-2xl">🚫</div>
+                            <h4 class="font-bold text-red-600 text-sm">SETORAN GMAIL SEDANG CLOSE</h4>
+                            <p class="text-xs text-red-500">Mohon tunggu hingga admin membuka kembali sesi setor Gmail.</p>
+                        </div>
                     `}
                 </div>
             `;
@@ -413,18 +428,20 @@
 
             if (confirm(`Ditemukan ${validList.length} Gmail unik dan valid. Kirim ke antrean admin?`)) {
                 validList.forEach(item => {
-                    const newRef = push(ref(database, 'setorQueue'));
-                    set(newRef, {
-                        id: newRef.key,
-                        user: db.currentUser,
-                        email: item.email,
-                        password: item.password,
-                        status: 'Pending',
-                        date: new Date().toLocaleDateString('id-ID')
-                    });
+                    if (database) {
+                        const newRef = push(ref(database, 'setorQueue'));
+                        set(newRef, {
+                            id: newRef.key,
+                            user: db.currentUser,
+                            email: item.email,
+                            password: item.password,
+                            status: 'Pending',
+                            date: new Date().toLocaleDateString('id-ID')
+                        });
+                    }
                 });
 
-                alert(`Berhasil mengirim ${validList.length} Gmail ke Firebase!`);
+                alert(`Berhasil mengirim ${validList.length} Gmail!`);
                 el.value = '';
             }
         };
@@ -495,18 +512,20 @@
             }
 
             const newBal = user.balance - amount;
-            update(ref(database, 'users/' + db.currentUser), { balance: newBal });
+            if (database) {
+                update(ref(database, 'users/' + db.currentUser), { balance: newBal });
 
-            const newWdRef = push(ref(database, 'withdraws'));
-            set(newWdRef, {
-                id: newWdRef.key,
-                user: db.currentUser,
-                amount: amount,
-                method: method,
-                account: account,
-                status: 'Pending',
-                date: new Date().toLocaleDateString('id-ID')
-            });
+                const newWdRef = push(ref(database, 'withdraws'));
+                set(newWdRef, {
+                    id: newWdRef.key,
+                    user: db.currentUser,
+                    amount: amount,
+                    method: method,
+                    account: account,
+                    status: 'Pending',
+                    date: new Date().toLocaleDateString('id-ID')
+                });
+            }
 
             alert('Permintaan penarikan berhasil diajukan!');
         };
@@ -617,6 +636,22 @@
 
             return `
                 <div class="space-y-4">
+                    <!-- SAKLAR OPEN / CLOSE SETORAN -->
+                    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-3">
+                        <h3 class="font-bold text-sm text-purple-600">Status Layanan Setoran</h3>
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                            <div>
+                                <span class="text-xs font-bold text-slate-700">Setoran Gmail saat ini:</span>
+                                <p class="text-[11px] ${db.isOpen ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}">
+                                    ${db.isOpen ? '🟢 BUKA (Member Bisa Setor)' : '🔴 TUTUP (Member Tidak Bisa Setor)'}
+                                </p>
+                            </div>
+                            <button onclick="window.toggleSetorStatus()" class="px-4 py-2 ${db.isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-500 hover:bg-emerald-600'} text-white text-xs font-bold rounded-xl shadow transition">
+                                ${db.isOpen ? 'Tutup Setoran' : 'Buka Setoran'}
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-3">
                         <h3 class="font-bold text-sm text-purple-600">Pengaturan Web & Pengumuman</h3>
                         <div class="grid grid-cols-2 gap-2 text-xs">
@@ -704,16 +739,30 @@
             `;
         }
 
+        window.toggleSetorStatus = function() {
+            if (db.currentUser !== ADMIN_USER) return;
+            const newStatus = !db.isOpen;
+            if (database) {
+                update(ref(database, '/'), { isOpen: newStatus });
+            } else {
+                db.isOpen = newStatus;
+                render();
+            }
+            alert(`Setoran Gmail berhasil diubah menjadi: ${newStatus ? 'OPEN' : 'CLOSE'}`);
+        };
+
         window.updateAdminConfig = function() {
             const r = parseInt(document.getElementById('adminRate').value) || 3500;
             const w = parseInt(document.getElementById('adminMinWd').value) || 3500;
             const ann = document.getElementById('adminAnnouncement').value.trim();
             
-            update(ref(database, '/'), {
-                rate: r,
-                minWd: w,
-                announcement: ann
-            });
+            if (database) {
+                update(ref(database, '/'), {
+                    rate: r,
+                    minWd: w,
+                    announcement: ann
+                });
+            }
             alert('Pengaturan & Pengumuman berhasil disimpan!');
         };
 
@@ -725,30 +774,32 @@
                     alert('Nominal saldo tidak valid!');
                     return;
                 }
-                update(ref(database, 'users/' + username), { balance: newBal });
-                alert(`Saldo member ${username} berhasil diperbarui menjadi Rp ${newBal.toLocaleString('id-ID')}`);
+                if (database) update(ref(database, 'users/' + username), { balance: newBal });
+                alert(`Saldo member ${username} berhasil diperbarui!`);
             }
         };
 
         window.processWdQueue = function(key) {
-            update(ref(database, 'withdraws/' + key), { status: 'Success' });
+            if (database) update(ref(database, 'withdraws/' + key), { status: 'Success' });
             alert('Status withdraw berhasil diubah jadi Success!');
         };
 
         window.processSetorQueue = function(key, username, isApprove) {
             const status = isApprove ? 'Approved' : 'Rejected';
             
-            update(ref(database, 'setorQueue/' + key), { status: status });
+            if (database) {
+                update(ref(database, 'setorQueue/' + key), { status: status });
 
-            if (isApprove) {
-                const userObj = db.users[username] || { balance: 0, totalEmails: 0 };
-                const curBal = userObj.balance || 0;
-                const curTotal = userObj.totalEmails || 0;
+                if (isApprove) {
+                    const userObj = db.users[username] || { balance: 0, totalEmails: 0 };
+                    const curBal = userObj.balance || 0;
+                    const curTotal = userObj.totalEmails || 0;
 
-                update(ref(database, 'users/' + username), {
-                    balance: curBal + (db.rate || 3500),
-                    totalEmails: curTotal + 1
-                });
+                    update(ref(database, 'users/' + username), {
+                        balance: curBal + (db.rate || 3500),
+                        totalEmails: curTotal + 1
+                    });
+                }
             }
         };
     </script>
