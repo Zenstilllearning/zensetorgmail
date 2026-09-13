@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -244,9 +245,9 @@
                     <p class="text-xs text-purple-100 leading-relaxed mb-6 font-medium">Setor Gmail, langsung cuan dengan rate terbaik di pasaran ⚡</p>
 
                     <div class="flex items-center gap-2 mb-6">
-                        <span class="px-3.5 py-1.5 ${db.isOpen ? 'bg-emerald-400' : 'bg-red-500'} text-white text-[10px] font-black rounded-full tracking-wider">
+                        <button onclick="toggleOpenStatus()" class="px-3.5 py-1.5 ${db.isOpen ? 'bg-emerald-400' : 'bg-red-500'} text-white text-[10px] font-black rounded-full tracking-wider hover:opacity-90">
                             ${db.isOpen ? 'OPEN' : 'CLOSE'}
-                        </span>
+                        </button>
                         <span class="glass-card px-3.5 py-1.5 text-white text-[10px] font-bold rounded-full flex items-center gap-1 border border-white/20">
                             ⚡ Rp ${(db.rate || 3500).toLocaleString('id-ID')}/email
                         </span>
@@ -289,6 +290,11 @@
                     <p class="text-xs text-slate-600 leading-relaxed">${db.announcement}</p>
                 </div>
             `;
+        }
+
+        function toggleOpenStatus() {
+            if (db.currentUser !== ADMIN_USER) return;
+            fb.update(fb.ref(fb.database, '/'), { isOpen: !db.isOpen });
         }
 
         function renderSetorTab(user) {
@@ -371,7 +377,4 @@
 
             if (invalidList.length > 0) {
                 infoHTML += `
-                    <div class="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 mb-3 space-y-1">
-                        <p class="font-bold">Terdapat ${invalidList.length} entri tidak valid:</p>
-                        <ul class="list-disc pl-4 space-y-0.5 max-h-24 overflow-y-auto">
-                  
+                    <div class="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-
