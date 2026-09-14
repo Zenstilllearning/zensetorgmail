@@ -383,4 +383,24 @@
                             seenEmails.add(emailLower);
                             validList.push({ email, password });
                         }
+                      } else {
+        invalidList.push({ 
+          line: index + 1, 
+          raw: line 
+        });
+      }
+    } else {
+      invalidList.push({ 
+        line: index + 1, 
+        raw: line 
+      });
+    }
+  });
+
+  showPreviewModal();
+};
+            </script>
+  </body>
+</html>
+
        
